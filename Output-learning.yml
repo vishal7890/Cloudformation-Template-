@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: for ec2 instances
+
+Mappings:
+  RegionArray:
+    us-east-1:
+      HVM64: "ami-0ff8a91507f77f867"
+      HVMG2: "ami-0a584ac55a7631c0c"
+    us-west-1:
+      HVM64: "ami-0bdb828fd58c52235"
+      HVMG2: "ami-066ee5fd4a9ef77f1"
+    eu-west-1:
+      HVM64: "ami-047bb4163c506cd98"
+      HVMG2: "ami-31c2f645"
+    ap-southeast-1:
+      HVM64: "ami-08569b978cc4dfa10"
+      HVMG2: "ami-0be9df32ae9f92309"
+    ap-northeast-1:
+      HVM64: "ami-06cd52961ce9f0d85"
+      HVMG2: "ami-053cdd503598e4a9d"
+
+
+
+  AvailabilityZoneAvailable:
+    us-east-1:
+      Zone: "t2.micro"
+    us-west-1:
+      Zone: "t2.medium"
+
+
+Conditions:
+  CreateEip: !Equals [!Ref EnvironmentType, Prod]
+Parameters:
+  InstanceDaType:
+    Description: instance available
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
+
+  SelectAvailabiltyZone:
+    Description: PLease select the availabiltiy zone of yours
+    Type: String
+    AllowedValues:
+      - us-east-1
+      - us-west-1
+      - ap-southeast-1
+
+  EnvironmentType:
+    Description: Please select enivornment type
+    Type: String
+    Default: Dev
+    AllowedValues:
+      - Dev
+      - Prod
+      - Test
+
+
+# Conditions:
+#   InstanceBasedOnAvailabiltyZone: !Equals[!Ref SelectAvailabiltyZone, us-west-1]
+
+Resources:
+  MyVmInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap
+        - RegionArray
+        - !Ref 'AWS::Region'
+        - HVM64
+
+      #InstanceType: !Ref InstanceDaType
+      InstanceType: !FindInMap
+        - AvailabilityZoneAvailable
+        - !Ref SelectAvailabiltyZone
+        - Zone
+
+
+      AvailabilityZone : !Ref SelectAvailabiltyZone
+      SecurityGroups:
+        - !Ref NewSecurityGroup
+
+  NewSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: my new secure group for instnaces
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: '22'
+            ToPort: '22'
+            CidrIp: 0.0.0.0/0
+  AtttachNewElasticIP:
+      Type: AWS::EC2::EIP
+      Condition: CreateEip
+      Properties:
+        InstanceId: !Ref MyVmInstance

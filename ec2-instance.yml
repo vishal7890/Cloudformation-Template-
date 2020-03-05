@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: basic ec2 instance
+#availabiltiy szone parametsziation and different available ec2 instances 
+Parameters:
+  MyKeyName:
+    Description: my new parameters fr KeyName
+    Type: AWS::EC2::KeyPair::KeyName
+  MyAvailabiltyZone:
+    Description: select AZ
+    Type: String
+    Default: ap-south-1
+    AllowedValues:
+      - us-east-2a
+      - us-east-12b
+      - ap-south-1
+  InstanceTypesAvailble:
+    Description: different types of instnaces
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.large
+      - t2.medium
+      - t2.micro
+Resources:
+  DevEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0d9462a653c34dab7
+      InstanceType: !Ref InstanceTypesAvailble
+      KeyName: !Ref MyKeyName
+      SecurityGroups:
+        - default
+        - !Ref SSHSecurityGroup
+      AvailabilityZone: !Ref MyAvailabiltyZone
+# adding new Resources and adding elasticIp
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: my new ssh Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: "8080"
+          ToPort: '8080'
+          CidrIp: 0.0.0.0/0
+  MyElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref DevEC2Instance

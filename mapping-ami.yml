@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: For ec2-instances
+
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: Dev
+    AllowedValues:
+      - Dev
+      - Prod
+      - QA
+
+
+Mappings:
+  MyRegionMap:
+    ap-south-1:
+      HVM64: ami-0d9462a653c34dab7
+    us-east-1:
+      HVM64: ami-0a887e401f7654935
+  EnvironmentMap:
+    Dev:
+      InstanceType: t2.micro
+    Prod:
+      InstanceType: t2.micro
+    QA:
+      InstanceType: t2.medium
+
+
+
+
+Conditions:
+  CreateEip: !Equals [!Ref EnvironmentName,Prod]
+  CreateSecurityGroup: !Equals [!Ref EnvironmentName, Dev]
+  CreateSecurityGroupProd: !Equals [!Ref EnvironmentName, Prod]
+  IfRegionUseKyename: !Or [!Equals[!Ref 'AWS::Region', us-east-1],!Equals[!Ref 'AWS::Region',us-west-1]]
+
+
+
+
+Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap
+        - MyRegionMap
+        - !Ref "AWS::Region"
+        - HVM64
+      InstanceType: !FindInMap
+        - EnvironmentMap
+        - !Ref EnvironmentName
+        - InstanceType
+      KeyName: !If [IfRegionUseKyename,cfn-key-1,cfn-key2]
+      SecurityGroups: !If [CreateSecurityGroup, [!Ref MySecurityGroup ], [!Ref MyProdSecureGroup]]
+
+  MySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateSecurityGroup
+    Properties:
+      GroupDescription: new secrutygrouo rule
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+
+
+  MyProdSecureGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateSecurityGroupProd
+    Properties:
+      Description: ProdSecureGroupNew
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
