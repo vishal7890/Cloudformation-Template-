@@ -33,6 +33,7 @@ Resources:
         # Tags:
         #   - key: name
         #     Value: !Sub "${AWS::StackName}-VPCLearning"
+
   Subnet01:
     Type: AWS::EC2::Subnet
     Properties:

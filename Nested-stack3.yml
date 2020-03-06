@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: for SecurityGroup
+
+Parameters:
+  VPCID:
+    Description: craete secuty inthis respective
+    Type: AWS::EC2::VPC::Id
+
+
+Resources:
+  NewSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: "22"
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '8080'
+          ToPort: "8080"
+          CidrIp: 0.0.0.0/0
+      VpcID: !Ref VPCID
+
+Outputs:
+  DevSGGroup:
+    Description: Dev sg grouog id
+    Value: !Ref NewSecurityGroup

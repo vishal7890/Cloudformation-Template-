@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: nested stack VPCLearning
+
+Parameters:
+  MyKeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+  VpcBlock:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: vpc cidr range
+  Subnet01Block:
+    Type: String
+    Default: 10.0.1.0/24
+
+
+
+
+Resources:
+  VPCStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://cloudstackbucket.s3-us-west-1.amazonaws.com/base-nested-Stack.yml"
+      Parameters:
+        VpcBlock: !Ref VpcBlock
+        Subnet01Block: !Ref Subnet01Block
+
+  SecurityGroupStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://cloudstackbucket.s3-us-west-1.amazonaws.com/Nested-stack3.yml"
+      Parameters:
+        VPCID: !GetAtt VPCStack.Outputs.VpcID
+
+
+
+    #TimeoutInMinutes: 5
+  MyVmInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-021bb9f371690f97a
+      KeyName: !Ref MyKeyName
+      InstanceType: t2.micro
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "True"
+          DeviceIndex: "0"
+          SubnetId: !GetAtt VPCStack.Outputs.subnet01Id
+          GroupSet:
+            - !GetAtt SecurityGroupStack.Outputs.DevSGGroup
+      UserData:
+        Fn::Base64: |
+          #!bin/bash
+          sudo yum update
+          sudo yum -y erase java-1.7.0-openjdk.x86_64
+          sudo yum -y isntall java-1.8.0-openjdk.x86_64
+          sudo yum -y erase java-1.7.0-openjdk-devel
+          sudo yum -y install tomcat8
+          service tomcat8 start
+          mkdir /usr/share/tomcat8/webapps/ROOT
+          touch /usr/share/tomcat8/webapps/ROOT/index.html
+          echo "cloudformation tmeplate is ready " > /usr/share/tomcat8/webapps/ROOT/index.html
+
+
+Outputs:
+  AppURL:
+    Description: Application to url
+    Value: !Sub "http://${MyVmInstance.PublicDnsName}:8080/index.html"
