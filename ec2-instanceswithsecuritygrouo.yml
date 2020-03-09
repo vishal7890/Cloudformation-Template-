@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ec2 instances with secrutygrouo
+
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: this is for key pair
+
+
+Outputs:
+  StagAppURL:
+    Description: Staging app value url
+    Value: !Sub 'http://${MyStageVmInstance.PublicDnsName}:8080/ccdemo/hello'
+  # ProdAppURL:
+  #   Description: Prod app value url
+  #   Value: !Sub 'http://${MyProductionVmInstance.PublicDnsName}:8080/ccdemo/hello'
+
+
+
+Resources:
+  MyCICDEC2InstanceRolePolicies:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+  MyInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref MyCICDEC2InstanceRolePolicies
+
+
+
+  MySecurityGroup:
+
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: this is new group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '8080'
+          ToPort: '8080'
+          CidrIp: 0.0.0.0/0
+
+
+  MyStageVmInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-021bb9f371690f97a
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      SecurityGroups:
+        - !Ref MySecurityGroup
+
+      IamInstanceProfile: !Ref MyInstanceProfile
+
+      Tags:
+        - Key: Name
+          Value: dev
+        - Key: Environment
+          Value: Stage
+      UserData:
+        Fn::Base64: |
+          sudo yum update
+          sudo yum -y install ruby
+          sudo yum -y isntsall wget
+          sudo yum -y erase java-1.7.0-openjdk.x86_64
+          sudo yum -y isntall java-1.8.0-openjdk.x86_64
+          sudo yum -y erase java-1.7.0-openjdk-devel
+          sudo yum -y install tomcat8
+          cd /home/ec2-user
+          wget https://aws-codedeploy-us-west-1.s3.amazonaws.com/latest
+          chmod +x ./install
+          sudo ./install auto
+
+    # MyProdVmInstance:
+    #   Type: AWS::EC2::Instance
+    #   Properties:
+    #     ImageId: ami-021bb9f371690f97a
+    #     InstanceType: t2.micro
+    #     KeyName: !Ref KeyName
+    #     SecurityGroups:
+    #       - !Ref MySecurityGroup
+    #
+    #     IamInstanceProfile: !Ref MyInstanceProfile
+    #     Tags:
+    #       - Key: Name
+    #         Value: Prod
+    #       - Key: Environment
+    #         Value: Production
+    #     UserData:
+    #       Fn::Base64: |
+    #         sudo yum update
+    #         sudo yum -y install ruby
+    #         sudo yum -y isntsall wget
+    #         sudo yum -y erase java-1.7.0-openjdk.x86_64
+    #         sudo yum -y isntall java-1.8.0-openjdk.x86_64
+    #         sudo yum -y erase java-1.7.0-openjdk-devel
+    #         sudo yum -y install tomcat8
+    #         cd /home/ec2-user
+    #         wget https://aws-codedeploy-us-west-1.s3.amazonaws.com/latest
+    #         chmod +x ./install
+    #         sudo ./install auto
