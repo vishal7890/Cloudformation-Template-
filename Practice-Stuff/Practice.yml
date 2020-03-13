@@ -1,0 +1,12 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: this is for learning Purpose
+
+
+Resources:
+  PracticeVMInstances:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId:
+      InstanceType:
+      SecurityGroups:
+      KeyName:
